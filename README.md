@@ -4,29 +4,30 @@ This mock is an extension of Dumpster SMTP Email Server used for Unit Testing. T
 
 # Technologies
 
-- Java 8
+- Java 23
 - Dumpster (http://quintanasoft.com/dumbster/)
-- Spring MVC
-- Jetty Embedded Server
+- Spring Boot Web 3.3.4
 
 # Running the Service
 
 - clone the repo
 - mvn clean package
-- mvn jetty:run
+- mvn spring-boot:run (or) java -jar target/mock-email-service.war
 
 The mock service will be up & running on port: 8080 & STMP Server will be running on port: 2025 (configurable)
 
 # Verify the Service
 
-- Open a web browser
-- curl http://localhost:8080/index.jsp
+- Open a web browser - Welcome Page
+- curl http://localhost:8080/
+- Health Check
+- curl http://localhost:8080/healthcheck
 - curl http://localhost:8080/email/healthcheck
 
 # API
 
-## Send sample SMTP message to dumpster server (GET or POST)
-- curl http://localhost:8080/email/send/abcd@abc.com
+## Send sample message to dumpster server (GET or POST)
+- curl http://localhost:8080/webemail/send/abcd@abc.com
 ````
 {"status":"success"}
 ````
@@ -44,4 +45,11 @@ The mock service will be up & running on port: 8080 & STMP Server will be runnin
 {"status":"success", "count":"1"}
 ````
 
+# Docker
+
+## Build Image
+- docker build -t mock-email-service .
+
+## Run Image
+- docker run -it -p 8080:8080   mock-email-service
 
