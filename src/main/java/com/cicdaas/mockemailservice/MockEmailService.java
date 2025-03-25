@@ -26,11 +26,30 @@ import com.dumbster.smtp.SimpleSmtpServer;
 import com.dumbster.smtp.SmtpMessage;
 
 import ch.qos.logback.classic.Logger;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Tags;
 
 @Controller
 public class MockEmailService {
 
     private static final Logger LOG = (Logger) LoggerFactory.getLogger(MockEmailService.class);
+
+    private Counter emailAddressCounter;
+    private Counter webEmailCounter;
+    private MeterRegistry meterRegistry;
+
+    public MockEmailService(MeterRegistry meterRegistry) {
+        this.meterRegistry = meterRegistry;
+        this.webEmailCounter = Counter.builder("webemail.sent.count")
+            .tags("status", "sent")
+            .description("Total number of web emails sent")
+            .register(meterRegistry);
+        this.emailAddressCounter = Counter.builder("emailadress.count")
+            .tags("email-type", "web")
+            .description("Total number of email addresses in memory")
+            .register(meterRegistry);
+    }
 
     @RequestMapping(value = "/email/healthcheck", method = RequestMethod.GET, produces="text/plain")
     @ResponseBody
@@ -187,7 +206,9 @@ public class MockEmailService {
                 List<SimpleSmtpMessage> emails = new ArrayList<>();
                 emails.add(smtpMessage);
                 webEmails.put(emailAddress, emails);
+                incrementEmailAddressCounter();
             }
+            incrementWebEmailSent();
             return "{\"status\":\"success\"}";
         } catch (Exception e) {
             String errMsg = "Unable to send email!" + e.getMessage();
@@ -204,5 +225,24 @@ public class MockEmailService {
                 " , Total memory: " + Runtime.getRuntime().totalMemory() + " , Free memory: " + Runtime.getRuntime().freeMemory());
     }
 
+    @Scheduled(fixedRate = 300000)
+    public void updateWebEmailMetrics() {
+        // every 5 mins
+        Map<String, List<SimpleSmtpMessage>> webEmails = MockEmailServer.getInstance().getWebEmails();
+        long webEmailInMemoryCount = 0;
+        for (String emailAddress : webEmails.keySet()) {
+            webEmailInMemoryCount += webEmails.get(emailAddress).size();
+        }
+        Tags tags = Tags.of("email-type", "web");
+        meterRegistry.gauge("webmail.inmemory.count", tags, webEmailInMemoryCount);
+    }
+
+    private void incrementEmailAddressCounter() {
+        emailAddressCounter.increment();
+    }
+
+    private void incrementWebEmailSent() {
+        webEmailCounter.increment();
+    }
 
 }

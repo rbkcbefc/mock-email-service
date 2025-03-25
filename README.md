@@ -53,3 +53,15 @@ The mock service will be up & running on port: 8080 & STMP Server will be runnin
 ## Run Image
 - docker run -it -p 8080:8080   mock-email-service
 
+# Observability
+
+## List of Metrics
+curl http://localhost:8080/actuator/metrics
+
+Counters: a) webemail.sent.count and b) emailadress.count
+
+Gauge: webmail.inmemory.count
+
+## Prometheus Metrics
+curl http://localhost:8080/actuator/prometheus
+
