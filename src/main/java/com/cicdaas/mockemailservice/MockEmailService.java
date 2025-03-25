@@ -6,18 +6,14 @@ import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 
-import javax.mail.BodyPart;
 import javax.mail.Session;
-import javax.mail.internet.InternetAddress;
-import javax.mail.internet.MimeBodyPart;
 import javax.mail.internet.MimeMessage;
-import javax.mail.internet.MimeMultipart;
 
-import org.apache.commons.codec.binary.Base64;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSenderImpl;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Controller;
@@ -35,9 +31,6 @@ import ch.qos.logback.classic.Logger;
 public class MockEmailService {
 
     private static final Logger LOG = (Logger) LoggerFactory.getLogger(MockEmailService.class);
-
-    @Autowired
-    private JavaMailSenderImpl mailSender;
 
     @RequestMapping(value = "/email/healthcheck", method = RequestMethod.GET, produces="text/plain")
     @ResponseBody
@@ -86,7 +79,7 @@ public class MockEmailService {
         List<SimpleSmtpMessage> smtpMsgs = new ArrayList<SimpleSmtpMessage>();
         SimpleSmtpServer smtpServer = MockEmailServer.getInstance().getSimpleSmtpServer();
         Iterator<SmtpMessage> emailIter = smtpServer.getReceivedEmail();
-        LOG.debug("Received Email Size: " + smtpServer.getReceivedEmailSize());
+        LOG.debug("Total SMTP Email Size: " + smtpServer.getReceivedEmailSize());
         UserSimpleSmtpMessages msgs = new UserSimpleSmtpMessages();
         msgs.setEmailAddress(emailAddress);
         List<SimpleSmtpMessage> listOfMsg = new ArrayList<SimpleSmtpMessage>();
@@ -110,7 +103,13 @@ public class MockEmailService {
                 }
             }
         }
-        LOG.debug("List of messages: " + listOfMsg.size());
+        LOG.debug("Total User SMTP Emails: " + listOfMsg.size());
+        Map<String, List<SimpleSmtpMessage>> webEmails = MockEmailServer.getInstance().getWebEmails();
+        LOG.debug("Total Web User(s): " + webEmails.size());
+        if (webEmails.containsKey(emailAddress)) {
+            listOfMsg.addAll(webEmails.get(emailAddress));
+        }
+        LOG.debug("Total User Emails  (smtp & web): " + listOfMsg.size());
         msgs.setMsgs(listOfMsg);
         return msgs;
     }
@@ -132,10 +131,8 @@ public class MockEmailService {
     }
 
     private String decodeEmailAddress(String emailAddress) {
-        String decodedEmailId = new String(Base64.decodeBase64(emailAddress.getBytes()));
         // when Email Id is NOT encoded, safely return the original Email ID with domain as .com
-        return (decodedEmailId.contains("@") && decodedEmailId.contains(".") && decodedEmailId.length() > 5) ? 
-                decodedEmailId : emailAddress + ".com";
+        return emailAddress.contains("@") ? emailAddress : emailAddress + ".com";
     }
 
     @RequestMapping(value = "/email/send/{emailAddress}", method = {RequestMethod.GET , RequestMethod.POST}, 
@@ -146,20 +143,55 @@ public class MockEmailService {
             // compose message
             emailAddress = decodeEmailAddress(emailAddress);
             LOG.debug("Send Email Address: " + emailAddress);
-            MimeMessage mmsg = mailSender.createMimeMessage();
-            mmsg.addRecipient(javax.mail.Message.RecipientType.TO, new InternetAddress(emailAddress));
-    
-            MimeMultipart content = new MimeMultipart("related");
-            BodyPart htmlPart = new MimeBodyPart();
-            htmlPart.setContent("<html><body><h1>Test Email - " + System.currentTimeMillis() + "</h1></body></html>", "text/html");
-            content.addBodyPart(htmlPart);
-            mmsg.setContent(content);
-            mmsg.setFrom(new InternetAddress("admin@mockemailservice.com"));
-            mmsg.setSubject("Subject: Test Email");
-            mailSender.send(mmsg);
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setFrom("admin@mockemailservice.com");
+            message.setTo(emailAddress);
+            message.setSubject("Subject: Test Email");
+            message.setText("<html><body><h1>Test Email - \" + System.currentTimeMillis() + \"</h1></body></html>");
+            Properties javaMailProperties = new Properties();
+            javaMailProperties.setProperty("mail.transport.protocol", "smtp");
+            javaMailProperties.setProperty("mail.smtp.auth", "false");
+            javaMailProperties.setProperty("mail.smtp.starttls.enable", "false");
+            JavaMailSenderImpl mailSender = new JavaMailSenderImpl();
+            mailSender.setHost("localhost");
+            mailSender.setPort(2025);
+            mailSender.setJavaMailProperties(javaMailProperties);
+            mailSender.send(message);
             return "{\"status\":\"success\"}";
         } catch (Exception e) {
-            String errMsg = "Unable to send email!" + e.getMessage(); 
+            String errMsg = "Unable to send email!" + e.getMessage();
+            LOG.error(errMsg); 
+            return "{\"status\":\"failed\",\"message\":\""+errMsg+"\"}";
+        }
+    }
+
+    @RequestMapping(value = "/webemail/send/{emailAddress}", method = {RequestMethod.GET , RequestMethod.POST}, 
+    produces="application/json")
+    @ResponseBody
+    public String sendWebEmail(@PathVariable("emailAddress") String emailAddress) {
+        try {
+            // compose message
+            emailAddress = decodeEmailAddress(emailAddress);
+            LOG.debug("Send Web Email Address: " + emailAddress);
+            SimpleSmtpMessage smtpMessage = new SimpleSmtpMessage();
+            smtpMessage.setBody("<html><body><h1>Test Email - \" + System.currentTimeMillis() + \"</h1></body></html>");
+            smtpMessage.setSubject("Subject: Test Email");
+            smtpMessage.setFrom("admin@mockemailservice.com");
+            smtpMessage.setTo(emailAddress);
+            smtpMessage.setReceivedDate("" + System.currentTimeMillis());
+            Map<String, List<SimpleSmtpMessage>> webEmails = MockEmailServer.getInstance().getWebEmails();
+            if (webEmails.containsKey(emailAddress)) {
+                List<SimpleSmtpMessage> emails = webEmails.get(emailAddress);
+                emails.add(smtpMessage);
+            } else {
+                List<SimpleSmtpMessage> emails = new ArrayList<>();
+                emails.add(smtpMessage);
+                webEmails.put(emailAddress, emails);
+            }
+            return "{\"status\":\"success\"}";
+        } catch (Exception e) {
+            String errMsg = "Unable to send email!" + e.getMessage();
+            LOG.error(errMsg); 
             return "{\"status\":\"failed\",\"message\":\""+errMsg+"\"}";
         }
     }
