@@ -58,7 +58,7 @@ The mock service will be up & running on port: 8080 & STMP Server will be runnin
 ## List of Metrics
 curl http://localhost:8080/actuator/metrics
 
-Counters: a) webemail.sent.count and b) emailadress.count
+Counters: a) webemail.sent.count and b) emailaddress.count
 
 Gauge: webmail.inmemory.count
 
