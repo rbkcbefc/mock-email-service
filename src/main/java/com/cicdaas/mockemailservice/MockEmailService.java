@@ -29,6 +29,7 @@ import ch.qos.logback.classic.Logger;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tags;
+import jakarta.transaction.Transactional;
 
 @Controller
 public class MockEmailService {
@@ -38,9 +39,11 @@ public class MockEmailService {
     private Counter emailAddressCounter;
     private Counter webEmailCounter;
     private MeterRegistry meterRegistry;
+    private EmailRepository emailRepository;
 
-    public MockEmailService(MeterRegistry meterRegistry) {
+    public MockEmailService(MeterRegistry meterRegistry, EmailRepository emailRepository) {
         this.meterRegistry = meterRegistry;
+        this.emailRepository = emailRepository;
         this.webEmailCounter = Counter.builder("webemail.sent.count")
             .tags("status", "sent")
             .description("Total number of web emails sent")
@@ -60,6 +63,7 @@ public class MockEmailService {
     @SuppressWarnings("unchecked")
     @RequestMapping(value = "/email/clear/{emailAddress}", method = RequestMethod.GET, produces="application/json")
     @ResponseBody
+    @Transactional
     public String clearMsgs(@PathVariable("emailAddress") String emailAddress) {
         emailAddress = decodeEmailAddress(emailAddress);
         LOG.debug("Clear Email Messages: " + emailAddress);
@@ -86,6 +90,9 @@ public class MockEmailService {
                 }
             }
         }
+        emailRepository.deleteByTo(emailAddress);
+        long dbClearedCount = emailRepository.countByTo(emailAddress);
+        LOG.debug("Cleared from database: " + dbClearedCount + " emails");
         return "{\"status\":\"success\", \"count\":\""+clearedEmailCount+"\"}";
     }
 
@@ -123,12 +130,12 @@ public class MockEmailService {
             }
         }
         LOG.debug("Total User SMTP Emails: " + listOfMsg.size());
-        Map<String, List<SimpleSmtpMessage>> webEmails = MockEmailServer.getInstance().getWebEmails();
-        LOG.debug("Total Web User(s): " + webEmails.size());
-        if (webEmails.containsKey(emailAddress)) {
-            listOfMsg.addAll(webEmails.get(emailAddress));
+        List<SimpleSmtpMessage> dbEmails = emailRepository.findByToOrderByReceivedDateDesc(emailAddress);
+        LOG.debug("Total DB Emails: " + dbEmails.size());
+        if (!dbEmails.isEmpty()) {
+            listOfMsg.addAll(dbEmails);
         }
-        LOG.debug("Total User Emails  (smtp & web): " + listOfMsg.size());
+        LOG.debug("Total User Emails  (smtp & db): " + listOfMsg.size());
         msgs.setMsgs(listOfMsg);
         return msgs;
     }
@@ -184,12 +191,11 @@ public class MockEmailService {
         }
     }
 
-    @RequestMapping(value = "/webemail/send/{emailAddress}", method = {RequestMethod.GET , RequestMethod.POST}, 
+    @RequestMapping(value = "/webemail/send/{emailAddress}", method = {RequestMethod.GET , RequestMethod.POST},
     produces="application/json")
     @ResponseBody
     public String sendWebEmail(@PathVariable("emailAddress") String emailAddress) {
         try {
-            // compose message
             emailAddress = decodeEmailAddress(emailAddress);
             LOG.debug("Send Web Email Address: " + emailAddress);
             SimpleSmtpMessage smtpMessage = new SimpleSmtpMessage();
@@ -198,21 +204,13 @@ public class MockEmailService {
             smtpMessage.setFrom("admin@mockemailservice.com");
             smtpMessage.setTo(emailAddress);
             smtpMessage.setReceivedDate("" + System.currentTimeMillis());
-            Map<String, List<SimpleSmtpMessage>> webEmails = MockEmailServer.getInstance().getWebEmails();
-            if (webEmails.containsKey(emailAddress)) {
-                List<SimpleSmtpMessage> emails = webEmails.get(emailAddress);
-                emails.add(smtpMessage);
-            } else {
-                List<SimpleSmtpMessage> emails = new ArrayList<>();
-                emails.add(smtpMessage);
-                webEmails.put(emailAddress, emails);
-                incrementEmailAddressCounter();
-            }
+            emailRepository.save(smtpMessage);
             incrementWebEmailSent();
+            LOG.debug("Web email saved to database for: " + emailAddress);
             return "{\"status\":\"success\"}";
         } catch (Exception e) {
             String errMsg = "Unable to send email!" + e.getMessage();
-            LOG.error(errMsg); 
+            LOG.error(errMsg);
             return "{\"status\":\"failed\",\"message\":\""+errMsg+"\"}";
         }
     }
@@ -227,14 +225,10 @@ public class MockEmailService {
 
     @Scheduled(fixedRate = 300000)
     public void updateWebEmailMetrics() {
-        // every 5 mins
-        Map<String, List<SimpleSmtpMessage>> webEmails = MockEmailServer.getInstance().getWebEmails();
-        long webEmailInMemoryCount = 0;
-        for (String emailAddress : webEmails.keySet()) {
-            webEmailInMemoryCount += webEmails.get(emailAddress).size();
-        }
-        Tags tags = Tags.of("email-type", "web");
-        meterRegistry.gauge("webmail.inmemory.count", tags, webEmailInMemoryCount);
+        long dbEmailCount = emailRepository.count();
+        Tags tags = Tags.of("email-type", "db");
+        meterRegistry.gauge("webmail.db.count", tags, dbEmailCount);
+        LOG.debug("Total emails in database: " + dbEmailCount);
     }
 
     private void incrementEmailAddressCounter() {
