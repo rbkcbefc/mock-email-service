@@ -74,7 +74,8 @@
         <dependency>
             <groupId>org.testng</groupId>
             <artifactId>testng</artifactId>
-            <version>6.8</version>
+            <version>7.10.2</version>
+            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>
@@ -132,6 +133,10 @@
 			<scope>test</scope>
 			<exclusions>
 				<exclusion>
+					<groupId>org.junit.jupiter</groupId>
+					<artifactId>junit-jupiter</artifactId>
+				</exclusion>
+				<exclusion>
 					<groupId>org.junit.vintage</groupId>
 					<artifactId>junit-vintage-engine</artifactId>
 				</exclusion>
@@ -152,6 +157,18 @@
                 <configuration>
                     <finalName>mock-email-service</finalName>
                 </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>3.2.5</version>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.apache.maven.surefire</groupId>
+                        <artifactId>surefire-testng</artifactId>
+                        <version>3.2.5</version>
+                    </dependency>
+                </dependencies>
             </plugin>
         </plugins>
     </build>

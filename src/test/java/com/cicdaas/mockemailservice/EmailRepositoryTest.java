@@ -1,17 +1,18 @@
 package com.cicdaas.mockemailservice;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.testng.Assert.*;
 
 import java.util.List;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
+import org.springframework.test.context.testng.AbstractTestNGSpringContextTests;
+import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.Test;
 
 @DataJpaTest
-class EmailRepositoryTest {
+public class EmailRepositoryTest extends AbstractTestNGSpringContextTests {
 
     @Autowired
     private TestEntityManager entityManager;
@@ -19,13 +20,13 @@ class EmailRepositoryTest {
     @Autowired
     private EmailRepository emailRepository;
 
-    @BeforeEach
-    void setUp() {
+    @BeforeMethod
+    public void setUp() {
         emailRepository.deleteAll();
     }
 
     @Test
-    void testSaveEmailPersistsToDatabase() {
+    public void testSaveEmailPersistsToDatabase() {
         SimpleSmtpMessage message = new SimpleSmtpMessage();
         message.setTo("test@example.com");
         message.setFrom("sender@test.com");
@@ -45,7 +46,7 @@ class EmailRepositoryTest {
     }
 
     @Test
-    void testFindByToOrderByReceivedDateDesc() {
+    public void testFindByToOrderByReceivedDateDesc() {
         SimpleSmtpMessage msg1 = createMessage("test@example.com", "1000000000");
         SimpleSmtpMessage msg2 = createMessage("test@example.com", "3000000000");
         SimpleSmtpMessage msg3 = createMessage("test@example.com", "2000000000");
@@ -66,7 +67,7 @@ class EmailRepositoryTest {
     }
 
     @Test
-    void testFindByToReturnsEmptyListWhenNoMatch() {
+    public void testFindByToReturnsEmptyListWhenNoMatch() {
         SimpleSmtpMessage msg = createMessage("test@example.com", "1234567890");
         emailRepository.save(msg);
         entityManager.flush();
@@ -78,7 +79,7 @@ class EmailRepositoryTest {
     }
 
     @Test
-    void testDeleteByToRemovesAllMatchingEmails() {
+    public void testDeleteByToRemovesAllMatchingEmails() {
         SimpleSmtpMessage msg1 = createMessage("test@example.com", "1000000000");
         SimpleSmtpMessage msg2 = createMessage("test@example.com", "2000000000");
         SimpleSmtpMessage msg3 = createMessage("other@example.com", "3000000000");
@@ -97,7 +98,7 @@ class EmailRepositoryTest {
     }
 
     @Test
-    void testDeleteByToDoesNotAffectOtherEmails() {
+    public void testDeleteByToDoesNotAffectOtherEmails() {
         SimpleSmtpMessage msg1 = createMessage("test@example.com", "1000000000");
         SimpleSmtpMessage msg2 = createMessage("other@example.com", "2000000000");
         SimpleSmtpMessage msg3 = createMessage("another@example.com", "3000000000");
@@ -117,7 +118,7 @@ class EmailRepositoryTest {
     }
 
     @Test
-    void testCountByToReturnsCorrectCount() {
+    public void testCountByToReturnsCorrectCount() {
         SimpleSmtpMessage msg1 = createMessage("test@example.com", "1000000000");
         SimpleSmtpMessage msg2 = createMessage("test@example.com", "2000000000");
         SimpleSmtpMessage msg3 = createMessage("other@example.com", "3000000000");

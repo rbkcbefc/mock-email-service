@@ -1,21 +1,22 @@
 package com.cicdaas.mockemailservice;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.testng.Assert.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.testng.AbstractTestNGSpringContextTests;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
+import org.testng.annotations.Test;
 
 @SpringBootTest
 @AutoConfigureMockMvc
 @Transactional
-class MockEmailServiceTest {
+public class MockEmailServiceTest extends AbstractTestNGSpringContextTests {
 
     @Autowired
     private MockMvc mockMvc;
@@ -24,7 +25,7 @@ class MockEmailServiceTest {
     private EmailRepository emailRepository;
 
     @Test
-    void testHealthCheckReturnsAlive() throws Exception {
+    public void testHealthCheckReturnsAlive() throws Exception {
         mockMvc.perform(get("/email/healthcheck"))
             .andExpect(status().isOk())
             .andExpect(content().string("alive"))
@@ -32,7 +33,7 @@ class MockEmailServiceTest {
     }
 
     @Test
-    void testReadMsgsReturnsEmptyListWhenNoEmails() throws Exception {
+    public void testReadMsgsReturnsEmptyListWhenNoEmails() throws Exception {
         mockMvc.perform(get("/email/read/nonexistent@example.com"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.emailAddress").value("nonexistent@example.com"))
@@ -40,21 +41,21 @@ class MockEmailServiceTest {
     }
 
     @Test
-    void testReadMsgsDecodesEmailAddressWithoutAtSign() throws Exception {
+    public void testReadMsgsDecodesEmailAddressWithoutAtSign() throws Exception {
         mockMvc.perform(get("/email/read/testuser"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.emailAddress").value("testuser.com"));
     }
 
     @Test
-    void testReadMsgsKeepsEmailAddressWithAtSign() throws Exception {
+    public void testReadMsgsKeepsEmailAddressWithAtSign() throws Exception {
         mockMvc.perform(get("/email/read/test@example.com"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.emailAddress").value("test@example.com"));
     }
 
     @Test
-    void testReadMsgsReturnsDbEmailsOnly() throws Exception {
+    public void testReadMsgsReturnsDbEmailsOnly() throws Exception {
         SimpleSmtpMessage dbEmail = new SimpleSmtpMessage();
         dbEmail.setTo("dbtest@example.com");
         dbEmail.setFrom("sender@test.com");
@@ -71,14 +72,14 @@ class MockEmailServiceTest {
     }
 
     @Test
-    void testClearMsgsDecodesEmailAddress() throws Exception {
+    public void testClearMsgsDecodesEmailAddress() throws Exception {
         mockMvc.perform(get("/email/clear/testuser"))
             .andExpect(status().isOk())
             .andExpect(content().contentType(MediaType.APPLICATION_JSON));
     }
 
     @Test
-    void testClearMsgsReturnsSuccessJson() throws Exception {
+    public void testClearMsgsReturnsSuccessJson() throws Exception {
         mockMvc.perform(get("/email/clear/test@example.com"))
             .andExpect(status().isOk())
             .andExpect(content().contentType(MediaType.APPLICATION_JSON))
@@ -87,7 +88,7 @@ class MockEmailServiceTest {
     }
 
     @Test
-    void testSendEmailReturnsJson() throws Exception {
+    public void testSendEmailReturnsJson() throws Exception {
         mockMvc.perform(get("/email/send/test@example.com"))
             .andExpect(status().isOk())
             .andExpect(content().contentType(MediaType.APPLICATION_JSON))
@@ -95,14 +96,14 @@ class MockEmailServiceTest {
     }
 
     @Test
-    void testSendEmailDecodesEmailAddress() throws Exception {
+    public void testSendEmailDecodesEmailAddress() throws Exception {
         mockMvc.perform(post("/email/send/testuser"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.status").exists());
     }
 
     @Test
-    void testSendWebEmailSavesToDatabase() throws Exception {
+    public void testSendWebEmailSavesToDatabase() throws Exception {
         long beforeCount = emailRepository.count();
 
         mockMvc.perform(get("/webemail/send/webtestsave@example.com"))
@@ -114,7 +115,7 @@ class MockEmailServiceTest {
     }
 
     @Test
-    void testSendWebEmailDecodesAddress() throws Exception {
+    public void testSendWebEmailDecodesAddress() throws Exception {
         mockMvc.perform(post("/webemail/send/testuser"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.status").value("success"));
@@ -124,7 +125,7 @@ class MockEmailServiceTest {
     }
 
     @Test
-    void testSendWebEmailReturnsSuccessJson() throws Exception {
+    public void testSendWebEmailReturnsSuccessJson() throws Exception {
         mockMvc.perform(post("/webemail/send/test@example.com"))
             .andExpect(status().isOk())
             .andExpect(content().contentType(MediaType.APPLICATION_JSON))

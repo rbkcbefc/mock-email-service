@@ -1,13 +1,13 @@
 package com.cicdaas.mockemailservice;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.testng.Assert.*;
 
-import org.junit.jupiter.api.Test;
+import org.testng.annotations.Test;
 
-class SimpleSmtpMessageTest {
+public class SimpleSmtpMessageTest {
 
     @Test
-    void testDefaultConstructorInitializesBody() {
+    public void testDefaultConstructorInitializesBody() {
         SimpleSmtpMessage message = new SimpleSmtpMessage();
 
         assertNotNull(message.getBody());
@@ -20,7 +20,7 @@ class SimpleSmtpMessageTest {
     }
 
     @Test
-    void testGettersAndSetters() {
+    public void testGettersAndSetters() {
         SimpleSmtpMessage message = new SimpleSmtpMessage();
 
         message.setId(1L);
@@ -43,13 +43,13 @@ class SimpleSmtpMessageTest {
     }
 
     @Test
-    void testIdGeneratedAutomatically() {
+    public void testIdGeneratedAutomatically() {
         SimpleSmtpMessage message = new SimpleSmtpMessage();
         assertNull(message.getId());
     }
 
     @Test
-    void testNullableFieldsAllowNull() {
+    public void testNullableFieldsAllowNull() {
         SimpleSmtpMessage message = new SimpleSmtpMessage();
 
         message.setFrom(null);
@@ -63,7 +63,7 @@ class SimpleSmtpMessageTest {
     }
 
     @Test
-    void testToFieldCanBeSet() {
+    public void testToFieldCanBeSet() {
         SimpleSmtpMessage message = new SimpleSmtpMessage();
         message.setTo("test@example.com");
 
@@ -71,7 +71,7 @@ class SimpleSmtpMessageTest {
     }
 
     @Test
-    void testBodyCanContainHtmlContent() {
+    public void testBodyCanContainHtmlContent() {
         SimpleSmtpMessage message = new SimpleSmtpMessage();
         String htmlContent = "<html><body><h1>Test Email</h1></body></html>";
 
@@ -81,7 +81,7 @@ class SimpleSmtpMessageTest {
     }
 
     @Test
-    void testSerialVersionUID() {
+    public void testSerialVersionUID() {
         assertEquals(1L, SimpleSmtpMessage.serialVersionUID);
     }
 }

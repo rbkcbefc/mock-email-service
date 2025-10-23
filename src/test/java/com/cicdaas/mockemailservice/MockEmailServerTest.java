@@ -1,15 +1,15 @@
 package com.cicdaas.mockemailservice;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.testng.Assert.*;
 
-import org.junit.jupiter.api.Test;
+import org.testng.annotations.Test;
 
 import com.dumbster.smtp.SimpleSmtpServer;
 
-class MockEmailServerTest {
+public class MockEmailServerTest {
 
     @Test
-    void testGetInstanceReturnsSameInstance() {
+    public void testGetInstanceReturnsSameInstance() {
         MockEmailServer instance1 = MockEmailServer.getInstance();
         MockEmailServer instance2 = MockEmailServer.getInstance();
 
@@ -19,7 +19,7 @@ class MockEmailServerTest {
     }
 
     @Test
-    void testGetInstanceInitializesSmtpServer() {
+    public void testGetInstanceInitializesSmtpServer() {
         MockEmailServer instance = MockEmailServer.getInstance();
         SimpleSmtpServer smtpServer = instance.getSimpleSmtpServer();
 
@@ -27,7 +27,7 @@ class MockEmailServerTest {
     }
 
     @Test
-    void testGetSimpleSmtpServerReturnsServer() {
+    public void testGetSimpleSmtpServerReturnsServer() {
         MockEmailServer instance = MockEmailServer.getInstance();
         SimpleSmtpServer server = instance.getSimpleSmtpServer();
 
@@ -35,7 +35,7 @@ class MockEmailServerTest {
     }
 
     @Test
-    void testSmtpServerIsNotStopped() {
+    public void testSmtpServerIsNotStopped() {
         MockEmailServer instance = MockEmailServer.getInstance();
         SimpleSmtpServer server = instance.getSimpleSmtpServer();
 

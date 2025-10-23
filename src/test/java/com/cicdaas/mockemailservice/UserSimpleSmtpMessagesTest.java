@@ -1,16 +1,16 @@
 package com.cicdaas.mockemailservice;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.testng.Assert.*;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import org.junit.jupiter.api.Test;
+import org.testng.annotations.Test;
 
-class UserSimpleSmtpMessagesTest {
+public class UserSimpleSmtpMessagesTest {
 
     @Test
-    void testDefaultConstructorInitializesFields() {
+    public void testDefaultConstructorInitializesFields() {
         UserSimpleSmtpMessages messages = new UserSimpleSmtpMessages();
 
         assertNotNull(messages.getEmailAddress());
@@ -20,7 +20,7 @@ class UserSimpleSmtpMessagesTest {
     }
 
     @Test
-    void testSettersAndGetters() {
+    public void testSettersAndGetters() {
         UserSimpleSmtpMessages messages = new UserSimpleSmtpMessages();
 
         messages.setEmailAddress("test@example.com");
@@ -38,7 +38,7 @@ class UserSimpleSmtpMessagesTest {
     }
 
     @Test
-    void testMessagesListMutable() {
+    public void testMessagesListMutable() {
         UserSimpleSmtpMessages messages = new UserSimpleSmtpMessages();
         List<SimpleSmtpMessage> msgList = messages.getMsgs();
 
@@ -60,7 +60,7 @@ class UserSimpleSmtpMessagesTest {
     }
 
     @Test
-    void testSetEmailAddressWithDifferentFormats() {
+    public void testSetEmailAddressWithDifferentFormats() {
         UserSimpleSmtpMessages messages = new UserSimpleSmtpMessages();
 
         messages.setEmailAddress("simple@test.com");
@@ -74,7 +74,7 @@ class UserSimpleSmtpMessagesTest {
     }
 
     @Test
-    void testEmptyMessagesList() {
+    public void testEmptyMessagesList() {
         UserSimpleSmtpMessages messages = new UserSimpleSmtpMessages();
         List<SimpleSmtpMessage> emptyList = new ArrayList<>();
 
@@ -85,7 +85,7 @@ class UserSimpleSmtpMessagesTest {
     }
 
     @Test
-    void testMultipleMessages() {
+    public void testMultipleMessages() {
         UserSimpleSmtpMessages messages = new UserSimpleSmtpMessages();
         List<SimpleSmtpMessage> msgList = new ArrayList<>();
 
